@@ -13,6 +13,7 @@ steps:
   - name: test
     image: node:lts-alpine
     commands:
-      - npm run-script test
+      - npm run eslint
+      - npm run test
 
 ...
