@@ -13,7 +13,6 @@ steps:
   - name: test
     image: node:lts-alpine
     commands:
-      - npm run-script lint
       - npm run-script test
 
 ...
