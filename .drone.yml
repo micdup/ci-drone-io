@@ -4,8 +4,16 @@ type: kubernetes
 name: test-pipeline
 
 steps:
+
   - name: prepare
     image: node:lts-alpine
     commands:
       - npm install
+
+  - name: test
+  image: node:lts-alpine
+  commands:
+    - npm run-script lint
+    - npm run-script test
+    
 ...
