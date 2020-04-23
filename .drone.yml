@@ -1,0 +1,95 @@
+---
+kind: pipeline
+type: kubernetes
+name: test-pipeline
+
+steps:
+  - name: prepare
+    image: node:lts-alpine
+    commands:
+      - npm install
+
+  - name: comment-prepare
+    image: cloudposse/github-commenter
+    environment:
+      GITHUB_TOKEN:
+        from_secret: github_token
+      GITHUB_OWNER: ${DRONE_REPO_OWNER}
+      GITHUB_REPO: ${DRONE_REPO_NAME}
+      GITHUB_COMMENT_TYPE: pr
+      GITHUB_PR_ISSUE_NUMBER: ${DRONE_PULL_REQUEST}
+      GITHUB_COMMENT_FORMAT: '{{.}}'
+    commands:
+      - 'github-commenter -comment "Pipeline comment: an error occured on prepare step"'
+    when:
+      status:
+      - failure
+
+  - name: test
+    image: node:lts-alpine
+    commands:
+      - npm run-script lint
+      - npm run-script test
+
+  - name: comment-test
+    image: cloudposse/github-commenter
+    environment:
+      GITHUB_TOKEN:
+        from_secret: github_token
+      GITHUB_OWNER: ${DRONE_REPO_OWNER}
+      GITHUB_REPO: ${DRONE_REPO_NAME}
+      GITHUB_COMMENT_TYPE: pr
+      GITHUB_PR_ISSUE_NUMBER: ${DRONE_PULL_REQUEST}
+      GITHUB_COMMENT_FORMAT: '{{.}}'
+    commands:
+      - 'github-commenter -comment "Pipeline comment: an error occured on test step"'
+    when:
+      status:
+      - failure
+
+  - name: code-analysis
+    image: aosapps/drone-sonar-plugin
+    settings:
+      sonar_host:
+        from_secret: sonar_host
+      sonar_token:
+        from_secret: sonar_token
+      sources: 'src'
+    commands:
+      - /bin/drone-sonar 2>&1 | tee sonarqube.log
+
+  - name: comment-sonarqube
+    image: cloudposse/github-commenter
+    environment:
+      GITHUB_TOKEN:
+        from_secret: github_token
+      GITHUB_OWNER: ${DRONE_REPO_OWNER}
+      GITHUB_REPO: ${DRONE_REPO_NAME}
+      GITHUB_COMMENT_TYPE: pr
+      GITHUB_PR_ISSUE_NUMBER: ${DRONE_PULL_REQUEST}
+      GITHUB_COMMENT_FORMAT: '{{.}}'
+      SONAR_HOST:
+        from_secret: sonar_host
+    commands:
+      - export SONARQUBE_REPORT_URL=$$(cat sonarqube.log | grep -o '/dashboard?id=.*')
+      - github-commenter -comment "Have a look at the [SonarQube report]($SONAR_HOST$$SONARQUBE_REPORT_URL)."
+
+#   - name: docker-build
+#     image: plugins/docker
+#     settings:
+#       auth: 094fc7ed-8996-461e-b88d-92cf04d202b4
+#       repo: "cymofactory/${DRONE_REPO_NAME}"
+#       tags: pr-${DRONE_PULL_REQUEST}
+#     when:
+#       status:
+#       - success
+
+trigger:
+  event:
+    - pull_request
+
+---
+kind: signature
+hmac: 4ac58c35517bc9d3abe8c2ffc63cb2b98d5418129b95517eb2afdec21a8f9f40
+
+...
