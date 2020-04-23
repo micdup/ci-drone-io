@@ -9,6 +9,8 @@ steps:
     image: node:lts-alpine
     commands:
       - npm install
+      - pwd
+      - ls
 
   - name: test
     image: node:lts-alpine
