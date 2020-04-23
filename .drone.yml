@@ -8,3 +8,4 @@ steps:
     image: node:lts-alpine
     commands:
       - npm install
+...
