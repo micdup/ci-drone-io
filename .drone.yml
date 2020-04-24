@@ -9,7 +9,5 @@ steps:
     image: node:lts-alpine
     commands:
       - npm install
-      - npm run lint
-      - npm run test
 
 ...
